@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>쌍용동 자원순환 & 종량제 스마트 플랫폼</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen pb-16">
+
+    <!-- Header Navigation -->
+    <header class="bg-emerald-600 text-white shadow-md sticky top-0 z-40">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center text-xl shadow-inner">
+                    <i class="fa-solid fa-recycle"></i>
+                </div>
+                <div>
+                    <h1 class="font-black text-lg leading-tight tracking-tight">쌍용동 자원순환 스마트 플랫폼</h1>
+                    <p class="text-[11px] text-emerald-100 font-medium">천안시 쌍용1·2·3동 맞춤형 분리배출 & 수거일정</p>
+                </div>
+            </div>
+            <button onclick="toggleAdminMode()" id="adminBtn" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-emerald-100 rounded-xl text-xs font-bold transition flex items-center space-x-1 border border-emerald-500 shadow-sm">
+                <i class="fa-solid fa-lock text-xs"></i>
+                <span id="adminBtnText">관리자 로그인</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Floating Button for Reporting Errors / Feedback Board -->
+    <button onclick="openReportModal()" class="fixed bottom-6 right-6 z-40 bg-rose-600 hover:bg-rose-700 text-white p-3.5 rounded-full shadow-2xl transition flex items-center space-x-2 border-2 border-white group">
+        <i class="fa-solid fa-bug text-base group-hover:rotate-12 transition-transform"></i>
+        <span class="text-xs font-bold pr-1">오류/의견 제보</span>
+    </button>
+
+    <!-- Main Container -->
+    <main class="max-w-5xl mx-auto px-4 py-6 space-y-8">
+
+        <!-- Search & Announcement Section -->
+        <section class="bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-800 rounded-3xl p-6 text-white shadow-lg space-y-4 relative overflow-hidden">
+            <div class="absolute -right-10 -bottom-10 opacity-10 text-white text-9xl pointer-events-none">
+                <i class="fa-solid fa-leaf"></i>
+            </div>
+            <div class="relative z-10 space-y-2">
+                <span class="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold">천안시 쌍용동 주민센터 연계안내</span>
+                <h2 class="text-xl sm:text-2xl font-black">올바른 분리배출, 깨끗한 쌍용동 만들기</h2>
+                <p class="text-xs sm:text-sm text-emerald-100">궁금한 쓰레기 품목이나 아파트 단지명을 검색해 보세요!</p>
+            </div>
+            
+            <!-- Quick Search Input -->
+            <div class="relative z-10 max-w-xl">
+                <input type="text" id="searchInput" oninput="performSearch()" placeholder="품목명 또는 아파트 이름 검색 (예: 종이팩, 벽산태영, 스티로폼)" class="w-full pl-11 pr-4 py-3.5 bg-white text-slate-800 placeholder-slate-400 rounded-2xl text-sm font-semibold shadow-inner focus:outline-none focus:ring-4 focus:ring-emerald-300 transition">
+                <i class="fa-solid fa-magnifying-glass absolute left-4 top-4 text-emerald-600 text-base"></i>
+            </div>
+        </section>
+
+        <!-- Navigation Tabs for Section Division -->
+        <nav class="flex space-x-2 bg-white p-1.5 rounded-2xl border border-slate-200/80 shadow-sm text-xs sm:text-sm font-extrabold">
+            <button id="navTab-apt" onclick="switchMainTab('apt')" class="flex-1 py-3 rounded-xl bg-emerald-600 text-white transition flex items-center justify-center space-x-2 shadow-sm">
+                <i class="fa-solid fa-building-user"></i>
+                <span>아파트 수거일정</span>
+            </button>
+            <button id="navTab-guide" onclick="switchMainTab('guide')" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-recycle"></i>
+                <span>품목별 배출가이드</span>
+            </button>
+            <button id="navTab-reports" onclick="switchMainTab('reports')" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-comments"></i>
+                <span>주민 의견/제보</span>
+            </button>
+            <button id="navTab-info" onclick="switchMainTab('info')" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-circle-info"></i>
+                <span>스마트 안내 & 콜센터</span>
+            </button>
+        </nav>
+
+        <!-- TAB 1: Apartment Recycling Schedule Section -->
+        <section id="section-apt" class="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-slate-200/80 space-y-5">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                    <h2 class="font-black text-slate-800 text-lg flex items-center">
+                        <i class="fa-solid fa-building-user text-emerald-600 mr-2"></i>쌍용동 아파트 단지별 분리수거 수거일정
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">쌍용1동, 2동, 3동 아파트 단지의 재활용품 배출 수칙 및 수거 요일 안내</p>
+                </div>
+                <div id="adminAptActions" class="hidden">
+                    <button onclick="openAddAptModal()" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow transition flex items-center space-x-1">
+                        <i class="fa-solid fa-plus"></i><span>아파트 추가</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dong Filter Tabs -->
+            <div class="flex items-center space-x-2 text-xs font-bold border-b border-slate-100 pb-3 overflow-x-auto no-scrollbar">
+                <button id="aptTab-all" onclick="filterAptDong('all')" class="px-4 py-2 rounded-xl bg-slate-800 text-white transition shadow-sm shrink-0">전체 (41개 단지)</button>
+                <button id="aptTab-1동" onclick="filterAptDong('1동')" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition shrink-0">쌍용1동 (11단지)</button>
+                <button id="aptTab-2동" onclick="filterAptDong('2동')" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition shrink-0">쌍용2동 (23단지)</button>
+                <button id="aptTab-3동" onclick="filterAptDong('3동')" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition shrink-0">쌍용3동 (7단지)</button>
+            </div>
+
+            <!-- Apt Schedule Grid -->
+            <div id="aptContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                <!-- Apt cards rendered via JS -->
+            </div>
+
+            <!-- Pagination Control for Apartments -->
+            <div id="aptPagination" class="flex items-center justify-center space-x-2 pt-3 text-xs font-bold">
+                <!-- Pagination buttons generated via JS -->
+            </div>
+        </section>
+
+        <!-- TAB 2: Category Guide Section -->
+        <section id="section-guide" class="hidden bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-slate-200/80 space-y-5">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                    <h2 class="font-black text-slate-800 text-lg flex items-center">
+                        <i class="fa-solid fa-recycle text-emerald-600 mr-2"></i>품목별 올바른 분리배출 가이드
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">재활용 가능 품목과 불가능 품목을 정확히 확인해보세요.</p>
+                </div>
+                <div id="adminGuideActions" class="hidden">
+                    <button onclick="openAddGuideModal()" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow transition flex items-center space-x-1">
+                        <i class="fa-solid fa-plus"></i><span>가이드 항목 추가</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Category Filter Tabs -->
+            <div class="flex items-center space-x-2 text-xs font-bold border-b border-slate-100 pb-3 overflow-x-auto no-scrollbar">
+                <button id="guideCatTab-all" onclick="filterGuideCategory('all')" class="px-3.5 py-2 rounded-xl bg-slate-800 text-white transition shadow-sm shrink-0">전체 품목</button>
+                <button id="guideCatTab-paper" onclick="filterGuideCategory('paper')" class="px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition shrink-0">종이/종이팩</button>
+                <button id="guideCatTab-glass" onclick="filterGuideCategory('glass')" class="px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition shrink-0">유리병</button>
+                <button id="guideCatTab-can" onclick="filterGuideCategory('can')" class="px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition shrink-0">캔류</button>
+                <button id="guideCatTab-plastic" onclick="filterGuideCategory('plastic')" class="px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition shrink-0">플라스틱/페트</button>
+                <button id="guideCatTab-vinyl" onclick="filterGuideCategory('vinyl')" class="px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition shrink-0">비닐류</button>
+                <button id="guideCatTab-foam" onclick="filterGuideCategory('foam')" class="px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition shrink-0">스티로폼</button>
+                <button id="guideCatTab-food" onclick="filterGuideCategory('food')" class="px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition shrink-0">음식물</button>
+            </div>
+
+            <!-- Guide Cards Grid -->
+            <div id="guideContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Rendered dynamically -->
+            </div>
+        </section>
+
+        <!-- TAB 3: 주민 의견/제보 전용 탭 -->
+        <section id="section-reports" class="hidden bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-slate-200/80 space-y-5">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                    <h2 class="font-black text-slate-800 text-lg flex items-center">
+                        <i class="fa-solid fa-comments text-emerald-600 mr-2"></i>주민 의견 및 오류 제보 게시판
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">쌍용동 주민들이 직접 남겨주신 정보 수정 요청과 의견 목록입니다.</p>
+                </div>
+                <button onclick="openReportModal()" class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow transition flex items-center space-x-1">
+                    <i class="fa-solid fa-plus"></i><span>새 의견 작성하기</span>
+                </button>
+            </div>
+
+            <div id="tabReportsContainer" class="space-y-3">
+                <!-- Rendered dynamically -->
+            </div>
+        </section>
+
+        <!-- TAB 4: Smart Info & Direct Phone Contact Section -->
+        <div id="section-info" class="hidden space-y-6">
+            <!-- Quick Info Notice Banner -->
+            <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-start space-x-3">
+                    <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0 font-bold">
+                        <i class="fa-solid fa-dumpster"></i>
+                    </div>
+                    <div class="text-xs space-y-1">
+                        <span class="font-bold text-slate-800">생활폐기물 배출원칙</span>
+                        <p class="text-slate-600 leading-relaxed">가연성은 종량제 봉투, 불연성은 전용 마대에 담아 일몰 후 지정장소 배출</p>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-start space-x-3">
+                    <div class="w-9 h-9 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 font-bold">
+                        <i class="fa-solid fa-pills"></i>
+                    </div>
+                    <div class="text-xs space-y-1">
+                        <span class="font-bold text-slate-800">가정 내 폐의약품</span>
+                        <p class="text-slate-600 leading-relaxed">겉포장지 제거 후 약국, 보건소, 행정복지센터 전용 수거함에 배출</p>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-start space-x-3">
+                    <div class="w-9 h-9 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center shrink-0 font-bold">
+                        <i class="fa-solid fa-truck"></i>
+                    </div>
+                    <div class="text-xs space-y-1">
+                        <span class="font-bold text-slate-800">대형폐기물 신고</span>
+                        <a href="https://www.cheonan.go.kr/kor/sub01_03_06.do" target="_blank" class="text-emerald-600 underline font-bold hover:text-emerald-700">천안시 대형폐기물 신고 바로가기</a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Waste Collection Company Contact Section -->
+            <section class="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-slate-200/80 space-y-4">
+                <h2 class="font-black text-slate-800 text-lg flex items-center">
+                    <i class="fa-solid fa-plug text-emerald-600 mr-2"></i>폐가전 무상 방문 수거
+                </h2>
+                <div class="bg-purple-50/80 p-5 rounded-2xl border border-purple-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="space-y-1 text-center sm:text-left">
+                        <span class="font-extrabold text-purple-900 text-base block">e-순환거버넌스</span>
+                        <p class="text-xs text-purple-700 font-medium">수수료 없이 방문하여 폐가전 제품을 수거해 드립니다.</p>
+                    </div>
+                    <a href="tel:1599-0903" class="px-5 py-3 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-sm rounded-xl shadow transition flex items-center space-x-2 shrink-0">
+                        <i class="fa-solid fa-phone"></i>
+                        <span>1599-0903</span>
+                    </a>
+                </div>
+            </section>
+        </div>
+
+    </main>
+
+    <!-- MODAL: Feedback & Error Reporting Board Modal -->
+    <div id="reportBoardModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h3 class="font-black text-slate-800 text-base flex items-center">
+                    <i class="fa-solid fa-triangle-exclamation text-rose-500 mr-2"></i>정보 오류 제보 및 의견 게시판
+                </h3>
+                <button onclick="closeModal('reportBoardModal')" class="text-slate-400 hover:text-slate-600 font-bold p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Report Input Form -->
+            <div class="space-y-3 text-xs bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+                <div class="flex gap-2">
+                    <input type="text" id="reportAuthor" placeholder="작성자/닉네임" class="w-1/3 p-2 border rounded-xl font-semibold bg-white">
+                    <input type="text" id="reportSubject" placeholder="대상 (예: 벽산태영 수거요일, 종이팩 배출)" class="w-2/3 p-2 border rounded-xl font-semibold bg-white">
+                </div>
+                <textarea id="reportContent" rows="2" placeholder="잘못된 정보나 수정이 필요한 의견을 자유롭게 적어주세요." class="w-full p-2 border rounded-xl font-semibold bg-white"></textarea>
+                <div class="flex justify-end">
+                    <button onclick="submitReport()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl shadow transition">
+                        제보 등록하기
+                    </button>
+                </div>
+            </div>
+
+            <!-- Reports List -->
+            <div class="flex-1 overflow-y-auto space-y-2.5 pr-1 no-scrollbar min-h-[150px]">
+                <h4 class="font-bold text-xs text-slate-500 mb-1">등록된 제보 목록</h4>
+                <div id="reportsContainer" class="space-y-2">
+                    <!-- Reports rendered via JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Guide Modal -->
+    <div id="guideModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <h3 class="font-extrabold text-slate-800 text-base">분리배출 가이드 등록/수정</h3>
+            <input type="hidden" id="editItemIndex" value="-1">
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-600 mb-1">카테고리</label>
+                    <select id="guideCatInput" class="w-full p-2.5 border rounded-xl font-semibold bg-slate-50">
+                        <option value="paper">종이/파지</option>
+                        <option value="glass">유리병</option>
+                        <option value="can">캔류</option>
+                        <option value="plastic">플라스틱</option>
+                        <option value="vinyl">비닐류</option>
+                        <option value="foam">스티로폼</option>
+                        <option value="food">음식물 쓰레기</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-600 mb-1">품목명</label>
+                    <input type="text" id="guideTitleInput" placeholder="예: 종이팩 (우유팩)" class="w-full p-2.5 border rounded-xl font-semibold">
+                </div>
+                <div>
+                    <label class="block font-bold text-emerald-700 mb-1">배출 가능 안내</label>
+                    <textarea id="guideAllowedInput" rows="3" placeholder="배출 가능한 항목을 입력하세요" class="w-full p-2.5 border rounded-xl font-semibold"></textarea>
+                </div>
+                <div>
+                    <label class="block font-bold text-rose-700 mb-1">배출 불가 안내</label>
+                    <textarea id="guideDisallowedInput" rows="3" placeholder="배출 불가 항목을 입력하세요" class="w-full p-2.5 border rounded-xl font-semibold"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end space-x-2 pt-2">
+                <button onclick="closeModal('guideModal')" class="px-4 py-2 bg-slate-200 rounded-xl text-slate-700 font-bold text-xs">취소</button>
+                <button onclick="saveWasteItem()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs">저장하기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Apt Modal -->
+    <div id="aptModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <h3 class="font-extrabold text-slate-800 text-base">아파트 배출일정 등록/수정</h3>
+            <input type="hidden" id="editAptIndex" value="-1">
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-600 mb-1">행정동</label>
+                    <select id="aptDongInput" class="w-full p-2.5 border rounded-xl font-semibold bg-slate-50">
+                        <option value="1동">쌍용1동</option>
+                        <option value="2동">쌍용2동</option>
+                        <option value="3동">쌍용3동</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-600 mb-1">아파트 단지명</label>
+                    <input type="text" id="aptNameInput" placeholder="예: 쌍용두산위브아파트" class="w-full p-2.5 border rounded-xl font-semibold">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-600 mb-1">수거 요일 / 시간</label>
+                    <input type="text" id="aptDayInput" placeholder="예: 매주 화요일 저녁 ~ 수요일 오전" class="w-full p-2.5 border rounded-xl font-semibold">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-600 mb-1">특이사항 및 배출 수칙</label>
+                    <input type="text" id="aptNoteInput" placeholder="예: 투명 페트병 별도 배출" class="w-full p-2.5 border rounded-xl font-semibold">
+                </div>
+            </div>
+            <div class="flex justify-end space-x-2 pt-2">
+                <button onclick="closeModal('aptModal')" class="px-4 py-2 bg-slate-200 rounded-xl text-slate-700 font-bold text-xs">취소</button>
+                <button onclick="saveAptItem()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs">저장하기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Custom Alert / Prompt / Confirm UI -->
+    <div id="customDialogModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
+            <div id="dialogIcon" class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center text-xl font-bold">
+                <i class="fa-solid fa-info"></i>
+            </div>
+            <h3 id="dialogTitle" class="font-extrabold text-slate-800 text-base">알림</h3>
+            <p id="dialogMessage" class="text-xs text-slate-600 leading-relaxed"></p>
+            
+            <!-- Input area for Prompt -->
+            <div id="dialogInputArea" class="hidden space-y-2">
+                <input type="password" id="dialogInput" placeholder="비밀번호 입력" class="w-full p-2.5 border rounded-xl text-xs text-center focus:ring-2 focus:ring-emerald-500 font-bold">
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex justify-center space-x-2 pt-2">
+                <button id="dialogCancelBtn" onclick="closeDialog(false)" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 rounded-xl text-slate-700 font-bold text-xs hidden">취소</button>
+                <button id="dialogConfirmBtn" onclick="closeDialog(true)" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Full Dataset for Ssangyong Apartments (Ssangyong 1-dong, 2-dong, 3-dong)
+        const initialAptData = [
+            // 쌍용 1동 (11단지)
+            { dong: '1동', name: '일성2차버들아파트', day: '매주 화요일 저녁 ~ 수요일 오전', note: '투명 페트병 별도 배출' },
+            { dong: '1동', name: '일성1차아파트', day: '매주 월요일 저녁 ~ 화요일 오전', note: '음식물 용기 세척 후 배출' },
+            { dong: '1동', name: '대우타워아파트', day: '매주 수요일', note: '스티로폼 테이프 제거 필수' },
+            { dong: '1동', name: '광명아파트', day: '매주 목요일', note: '재활용품 지정장소 배출' },
+            { dong: '1동', name: '쌍용두산위브아파트', day: '매주 화요일 / 금요일', note: '투명 페트병 전용함 이용' },
+            { dong: '1동', name: '쌍용아파트', day: '매주 수요일', note: '비닐류 이물질 제거 배출' },
+            { dong: '1동', name: '이화아파트', day: '매주 월요일', note: '박스류 접어서 배출' },
+            { dong: '1동', name: '극동아파트', day: '매주 목요일', note: '유리병류 구분 배출' },
+            { dong: '1동', name: '경동아파트', day: '매주 화요일', note: '소형 가전 수거함 별도' },
+            { dong: '1동', name: '현대3차아파트', day: '매주 금요일', note: '캔/고철류 분리수거' },
+            { dong: '1동', name: '현대1차아파트', day: '매주 수요일', note: '폐지류 이물질 제거' },
+
+            // 쌍용 2동 (23개 단지)
+            { dong: '2동', name: '벽산태영아파트', day: '매주 화요일 저녁 ~ 수요일 오전', note: '비닐류 이물질 제거 후 배출' },
+            { dong: '2동', name: '청솔1차아파트', day: '매주 수요일', note: '폐건전지 관리사무소 수거' },
+            { dong: '2동', name: '일성아파트', day: '매주 월요일', note: '종이팩 전용함 배출' },
+            { dong: '2동', name: '청솔2차아파트', day: '매주 목요일', note: '투명 페트병 라벨 제거' },
+            { dong: '2동', name: '월봉대우아파트', day: '매주 금요일', note: '대형폐기물 스티커 부착' },
+            { dong: '2동', name: '월봉현대아파트', day: '매주 화요일', note: '스티로폼 세척 배출' },
+            { dong: '2동', name: '쌍용자이아파트', day: '매주 금요일', note: '투명 페트병 별도 수거함' },
+            { dong: '2동', name: '동일하이빌', day: '매주 목요일', note: '음식물 용기 헹군 후 배출' },
+            { dong: '2동', name: '천안쌍용역 푸르지오아파트', day: '매주 수요일', note: '플라스틱/페트병 구분 배출' },
+            { dong: '2동', name: '천안쌍용역 코오롱하늘채', day: '매주 월요일/목요일', note: '지정 수거장소 배출' },
+            { dong: '2동', name: '현대아이파크 앤홈타운1단지', day: '매주 화요일', note: '투명 페트병 별도 수거' },
+            { dong: '2동', name: '현대아이파크 앤홈타운2단지', day: '매주 수요일', note: '비닐류 깨끗이 씻어서 배출' },
+            { dong: '2동', name: '해누리선경아파트', day: '매주 목요일', note: '소형가전 관리사무소 문의' },
+            { dong: '2동', name: '계룡푸른마을아파트', day: '매주 금요일', note: '유리병 색상 구분 없이 배출' },
+            { dong: '2동', name: '쌍용범양마더빌 2차아파트', day: '매주 화요일', note: '박스 테이프/운송장 제거' },
+            { dong: '2동', name: '쌍용동범양마더빌아파트', day: '매주 수요일', note: '지정 배출 시간 준수' },
+            { dong: '2동', name: '시영2차아파트', day: '매주 월요일', note: '종이류 압착 후 배출' },
+            { dong: '2동', name: '일성능수아파트', day: '매주 목요일', note: '음식물 수거칩 사용' },
+            { dong: '2동', name: '상록수현대아파트', day: '매주 금요일', note: '폐형광등 전용함 배출' },
+            { dong: '2동', name: '일성다래아파트', day: '매주 화요일', note: '스티로폼 이물질 제거' },
+            { dong: '2동', name: '쌍용모란아파트', day: '매주 수요일', note: '캔류 찌그러뜨려 배출' },
+            { dong: '2동', name: '쌍용동한라동백', day: '매주 월요일', note: '비닐봉투 묶어서 배출' },
+            { dong: '2동', name: '세경 개나리아파트', day: '매주 목요일', note: '투명 페트병 전용 배출' },
+
+            // 쌍용 3동 (7단지)
+            { dong: '3동', name: '쌍용주공7단지 1차 아파트', day: '매주 월요일 저녁', note: '지정 수거장소 배출' },
+            { dong: '3동', name: '쌍용주공7단지 2차 아파트', day: '매주 화요일', note: '투명 페트병 라벨 제거' },
+            { dong: '3동', name: '쌍용주공7단지 3차 아파트', day: '매주 수요일', note: '종이류 압착 배출' },
+            { dong: '3동', name: '쌍용주공9단지 아파트', day: '매주 목요일', note: '음식물 용기 세척' },
+            { dong: '3동', name: '쌍용마을 뜨란채아파트', day: '매주 금요일', note: '소형가전 수거함 별도' },
+            { dong: '3동', name: '파크밸리 동일하이빌', day: '매주 목요일 저녁 ~ 금요일 오전', note: '투명 페트병 전용함 이용' },
+            { dong: '3동', name: '쌍용 라이프타운아파트', day: '매주 화요일', note: '비닐류 이물질 세척 배출' }
+        ];
+
+        const initialGuideData = [
+            { category: 'paper', title: '종이/신문/상자류', allowed: '신문지, 전단지, 종이상자(택배상자), 책자, 노트 등', disallowed: '비닐 코팅지, 스프링철, 테이프/운송장 붙은 상자, 오염된 종이' },
+            { category: 'paper', title: '종이팩 (우유팩/두유팩)', allowed: '우유팩, 두유팩, 주스팩 (내용물을 비우고 물로 헹군 후 펼쳐서 건조)', disallowed: '일반 종이류와 혼합 배출, 오염된 종이팩' },
+            { category: 'glass', title: '유리병류', allowed: '음료수병, 와인병, 양주병 (내용물 비우고 헹군 후 배출)', disallowed: '거울, 깨진 유리, 도자기/유리식기류, 내열유리, 전구 (불연성 마대에 배출)' },
+            { category: 'can', title: '금속캔 / 철캔 / 알루미늄캔', allowed: '음료캔, 통조림캔, 부탄가스/스프레이캔 (구멍 뚫어 내용물 비운 후 압착 배출)', disallowed: '페인트통, 기름통, 이물질이 묻은 캔' },
+            { category: 'plastic', title: '투명 페트병 (별도 수거)', allowed: '생수병, 음료수병 (라벨 제거 후 압착하여 별도 전용함에 배출)', disallowed: '유색 페트병, 양념류/식용유 페트병, 이물질 부착된 병' },
+            { category: 'plastic', title: '일반 플라스틱류', allowed: '플라스틱 용기류(샴푸통, 세제통, 반찬용기 등)', disallowed: '알약 포장재, 카세트테이프, 칫솔, 완구류(혼합재질)' },
+            { category: 'vinyl', title: '비닐류', allowed: '과자/라면 봉지, 비닐장갑, 뽁뽁이(에어캡) (깨끗이 씻어서 배출)', disallowed: '오염된 비닐, 식탁보, 장판, 노끈' },
+            { category: 'foam', title: '스티로폼 (발포수지)', allowed: '흰색 완충재 및 스티로폼 상자 (운송장, 테이프 제거 후 배출)', disallowed: '색상이 있는 스티로폼, 건축용 자재, 컵라면 용기(오염된 경우 종량제)' },
+            { category: 'food', title: '음식물 쓰레기', allowed: '동물이 먹을 수 있는 음식물 폐기물 (물기 제거 후 배출)', disallowed: '동물 뼈, 패류 껍데기, 계란 껍질, 씨앗, 한약재 찌꺼기 (종량제 봉투 배출)' }
+        ];
+
+        // State Variables & Single Fixed Admin Password
+        const FIXED_ADMIN_PASSWORD = "ssangyong123!";
+        let aptData = JSON.parse(localStorage.getItem('ssangyong_apt_data_v2')) || initialAptData;
+        let guideData = JSON.parse(localStorage.getItem('ssangyong_guide_data_v2')) || initialGuideData;
+        let reportData = JSON.parse(localStorage.getItem('ssangyong_reports_v1')) || [
+            { author: '주민', subject: '벽산태영 수거요일', content: '수거 요일이 화요일 저녁으로 변경되었습니다.', date: '2025.02.20' }
+        ];
+        let isAdmin = false;
+        let currentAptDongFilter = 'all';
+        let currentCategoryFilter = 'all';
+        let currentAptPage = 1;
+        const APT_ITEMS_PER_PAGE = 9;
+
+        window.onload = function() {
+            renderAptCards();
+            renderGuideCards();
+            renderReports();
+        };
+
+        function switchMainTab(tabName) {
+            const tabs = ['apt', 'guide', 'reports', 'info'];
+            tabs.forEach(t => {
+                const section = document.getElementById(`section-${t}`);
+                const navBtn = document.getElementById(`navTab-${t}`);
+                if (section && navBtn) {
+                    if (t === tabName) {
+                        section.classList.remove('hidden');
+                        navBtn.className = "flex-1 py-3 rounded-xl bg-emerald-600 text-white transition flex items-center justify-center space-x-2 shadow-sm font-bold";
+                    } else {
+                        section.classList.add('hidden');
+                        navBtn.className = "flex-1 py-3 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition flex items-center justify-center space-x-2 font-bold";
+                    }
+                }
+            });
+        }
+
+        function performSearch() {
+            renderAptCards();
+            renderGuideCards();
+        }
+
+        // Custom Dialog Modal Helpers
+        let dialogResolve = null;
+        function showCustomAlert(msg, title = "알림") {
+            return new Promise((resolve) => {
+                dialogResolve = resolve;
+                document.getElementById('dialogTitle').innerText = title;
+                document.getElementById('dialogMessage').innerText = msg;
+                document.getElementById('dialogInputArea').classList.add('hidden');
+                document.getElementById('dialogCancelBtn').classList.add('hidden');
+                document.getElementById('customDialogModal').classList.remove('hidden');
+            });
+        }
+
+        function showCustomConfirm(msg, title = "확인") {
+            return new Promise((resolve) => {
+                dialogResolve = resolve;
+                document.getElementById('dialogTitle').innerText = title;
+                document.getElementById('dialogMessage').innerText = msg;
+                document.getElementById('dialogInputArea').classList.add('hidden');
+                document.getElementById('dialogCancelBtn').classList.remove('hidden');
+                document.getElementById('customDialogModal').classList.remove('hidden');
+            });
+        }
+
+        function showCustomPrompt(msg, title = "입력", placeholder = "입력하세요") {
+            return new Promise((resolve) => {
+                dialogResolve = resolve;
+                document.getElementById('dialogTitle').innerText = title;
+                document.getElementById('dialogMessage').innerText = msg;
+                const input = document.getElementById('dialogInput');
+                input.value = '';
+                input.placeholder = placeholder;
+                document.getElementById('dialogInputArea').classList.remove('hidden');
+                document.getElementById('dialogCancelBtn').classList.remove('hidden');
+                document.getElementById('customDialogModal').classList.remove('hidden');
+            });
+        }
+
+        function closeDialog(isConfirm) {
+            const modal = document.getElementById('customDialogModal');
+            modal.classList.add('hidden');
+            if (dialogResolve) {
+                const inputVal = document.getElementById('dialogInput').value;
+                const isPrompt = !document.getElementById('dialogInputArea').classList.contains('hidden');
+                if (isPrompt) {
+                    dialogResolve(isConfirm ? inputVal : null);
+                } else {
+                    dialogResolve(isConfirm);
+                }
+                dialogResolve = null;
+            }
+        }
+
+        async function toggleAdminMode() {
+            if (isAdmin) {
+                isAdmin = false;
+                setAdminUI(false);
+                await showCustomAlert("관리자 모드가 해제되었습니다.");
+                return;
+            }
+
+            const inputPw = await showCustomPrompt(
+                "관리자 전용 고정 비밀번호를 입력하세요.", 
+                "관리자 로그인",
+                "비밀번호 입력"
+            );
+
+            if (inputPw === FIXED_ADMIN_PASSWORD) {
+                isAdmin = true;
+                setAdminUI(true);
+                await showCustomAlert("관리자로 인증되었습니다.");
+            } else if (inputPw !== null) {
+                await showCustomAlert("비밀번호가 일치하지 않습니다. 관리자 권한이 거부되었습니다.");
+            }
+        }
+
+        function setAdminUI(active) {
+            if (active) {
+                document.getElementById('adminBtnText').innerText = "관리자 로그아웃";
+                document.getElementById('adminAptActions').classList.remove('hidden');
+                document.getElementById('adminGuideActions').classList.remove('hidden');
+            } else {
+                document.getElementById('adminBtnText').innerText = "관리자 로그인";
+                document.getElementById('adminAptActions').classList.add('hidden');
+                document.getElementById('adminGuideActions').classList.add('hidden');
+            }
+            renderAptCards();
+            renderGuideCards();
+            renderReports();
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function filterGuideCategory(cat) {
+            currentCategoryFilter = cat;
+            const categories = ['all', 'paper', 'glass', 'can', 'plastic', 'vinyl', 'foam', 'food'];
+            categories.forEach(c => {
+                const btn = document.getElementById(`guideCatTab-${c}`);
+                if (btn) {
+                    if (c === cat) {
+                        btn.className = "px-3.5 py-2 rounded-xl bg-slate-800 text-white transition shadow-sm shrink-0 font-bold";
+                    } else {
+                        btn.className = "px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition shrink-0 font-bold";
+                    }
+                }
+            });
+            renderGuideCards();
+        }
+
+        function renderGuideCards() {
+            const container = document.getElementById('guideContainer');
+            if (!container) return;
+
+            let filtered = guideData.filter(item => {
+                if (currentCategoryFilter !== 'all' && item.category !== currentCategoryFilter) return false;
+                return true;
+            });
+
+            const searchVal = document.getElementById('searchInput')?.value.toLowerCase().trim() || '';
+            if (searchVal) {
+                filtered = filtered.filter(item => 
+                    item.title.toLowerCase().includes(searchVal) || 
+                    item.allowed.toLowerCase().includes(searchVal) ||
+                    item.disallowed.toLowerCase().includes(searchVal)
+                );
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 font-semibold text-xs">검색 조건에 맞는 분리배출 항목이 없습니다.</div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map((item, idx) => {
+                const realIndex = guideData.indexOf(item);
+                return `
+                    <div class="bg-slate-50 hover:bg-white p-4.5 rounded-2xl border border-slate-200/80 shadow-sm transition space-y-3 relative group">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-extrabold text-slate-800 text-sm flex items-center">
+                                <i class="fa-solid fa-check-circle text-emerald-600 mr-2"></i>${item.title}
+                            </h3>
+                            ${isAdmin ? `
+                                <div class="space-x-1">
+                                    <button onclick="editGuideItem(${realIndex})" class="text-xs text-slate-500 hover:text-emerald-600 font-bold p-1"><i class="fa-solid fa-pen"></i></button>
+                                    <button onclick="deleteGuideItem(${realIndex})" class="text-xs text-rose-500 hover:text-rose-700 font-bold p-1"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="space-y-2 text-xs">
+                            <div class="bg-emerald-50/80 p-3 rounded-xl border border-emerald-100/80 space-y-1">
+                                <span class="font-bold text-emerald-800 flex items-center text-[11px]">
+                                    <i class="fa-solid fa-circle-check text-emerald-600 mr-1.5"></i>배출 가능
+                                </span>
+                                <p class="text-emerald-950 font-medium leading-relaxed">${item.allowed}</p>
+                            </div>
+                            <div class="bg-rose-50/80 p-3 rounded-xl border border-rose-100/80 space-y-1">
+                                <span class="font-bold text-rose-800 flex items-center text-[11px]">
+                                    <i class="fa-solid fa-circle-xmark text-rose-600 mr-1.5"></i>배출 불가 (종량제/기타)
+                                </span>
+                                <p class="text-rose-950 font-medium leading-relaxed">${item.disallowed}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterAptDong(dong) {
+            currentAptDongFilter = dong;
+            currentAptPage = 1;
+            ['all', '1동', '2동', '3동'].forEach(d => {
+                const btn = document.getElementById(`aptTab-${d}`);
+                if (btn) {
+                    if (d === dong) {
+                        btn.className = "px-4 py-2 rounded-xl bg-slate-800 text-white transition shadow-sm shrink-0 font-bold";
+                    } else {
+                        btn.className = "px-4 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition shrink-0 font-bold";
+                    }
+                }
+            });
+            renderAptCards();
+        }
+
+        function renderAptCards() {
+            const container = document.getElementById('aptContainer');
+            if (!container) return;
+
+            let filtered = aptData.filter(item => {
+                if (currentAptDongFilter !== 'all' && item.dong !== currentAptDongFilter) return false;
+                return true;
+            });
+
+            const searchVal = document.getElementById('searchInput')?.value.toLowerCase().trim() || '';
+            if (searchVal) {
+                filtered = filtered.filter(item => 
+                    item.name.toLowerCase().includes(searchVal) || 
+                    item.day.toLowerCase().includes(searchVal) ||
+                    item.note.toLowerCase().includes(searchVal)
+                );
+            }
+
+            const totalPages = Math.ceil(filtered.length / APT_ITEMS_PER_PAGE) || 1;
+            if (currentAptPage > totalPages) currentAptPage = totalPages;
+
+            const startIndex = (currentAptPage - 1) * APT_ITEMS_PER_PAGE;
+            const paginatedItems = filtered.slice(startIndex, startIndex + APT_ITEMS_PER_PAGE);
+
+            if (paginatedItems.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 font-semibold text-xs">검색 또는 선택된 조건에 맞는 아파트 정보가 없습니다.</div>`;
+            } else {
+                container.innerHTML = paginatedItems.map((item, idx) => {
+                    const realIndex = aptData.indexOf(item);
+
+                    let dongBadgeClass = "bg-emerald-100 text-emerald-800";
+                    if (item.dong === '1동') {
+                        dongBadgeClass = "bg-sky-100 text-sky-800 border border-sky-200";
+                    } else if (item.dong === '2동') {
+                        dongBadgeClass = "bg-emerald-100 text-emerald-800 border border-emerald-200";
+                    } else if (item.dong === '3동') {
+                        dongBadgeClass = "bg-purple-100 text-purple-800 border border-purple-200";
+                    }
+
+                    return `
+                        <div class="bg-slate-50 hover:bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm transition space-y-2 relative group hover:border-emerald-500">
+                            <div class="flex items-center justify-between">
+                                <span class="px-2.5 py-0.5 rounded-lg text-[11px] font-extrabold ${dongBadgeClass}">쌍용${item.dong}</span>
+                                ${isAdmin ? `
+                                    <div class="space-x-1">
+                                        <button onclick="editAptItem(${realIndex})" class="text-xs text-slate-500 hover:text-emerald-600 font-bold p-1"><i class="fa-solid fa-pen"></i></button>
+                                        <button onclick="deleteAptItem(${realIndex})" class="text-xs text-rose-500 hover:text-rose-700 font-bold p-1"><i class="fa-solid fa-trash"></i></button>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <h3 class="font-extrabold text-slate-800 text-sm">${item.name}</h3>
+                            <div class="text-xs text-slate-600 space-y-1 bg-white p-2.5 rounded-xl border border-slate-100">
+                                <p class="flex items-center text-emerald-700 font-bold">
+                                    <i class="fa-solid fa-calendar-check mr-1.5 text-xs"></i>${item.day}
+                                </p>
+                                <p class="text-slate-500 text-[11px] font-medium flex items-center">
+                                    <i class="fa-solid fa-circle-info mr-1.5 text-xs text-slate-400"></i>${item.note}
+                                </p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            renderAptPagination(totalPages);
+        }
+
+        function renderAptPagination(totalPages) {
+            const paginationContainer = document.getElementById('aptPagination');
+            if (!paginationContainer) return;
+
+            if (totalPages <= 1) {
+                paginationContainer.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === currentAptPage) {
+                    html += `<button onclick="changeAptPage(${i})" class="w-8 h-8 rounded-xl bg-emerald-600 text-white font-black shadow-sm transition">${i}</button>`;
+                } else {
+                    html += `<button onclick="changeAptPage(${i})" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition">${i}</button>`;
+                }
+            }
+            paginationContainer.innerHTML = html;
+        }
+
+        function changeAptPage(page) {
+            currentAptPage = page;
+            renderAptCards();
+        }
+
+        function renderReports() {
+            const modalContainer = document.getElementById('reportsContainer');
+            const tabContainer = document.getElementById('tabReportsContainer');
+
+            if (!reportData || reportData.length === 0) {
+                const emptyHtml = `<div class="text-center py-8 text-slate-400 font-semibold text-xs bg-slate-50 rounded-2xl border border-dashed border-slate-200">등록된 제보나 의견이 없습니다. 첫 의견을 작성해 보세요!</div>`;
+                if (modalContainer) modalContainer.innerHTML = emptyHtml;
+                if (tabContainer) tabContainer.innerHTML = emptyHtml;
+                return;
+            }
+
+            const html = reportData.map((rep, idx) => `
+                <div class="bg-slate-50 hover:bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-sm text-xs transition flex items-start justify-between gap-3">
+                    <div class="space-y-1 flex-1">
+                        <div class="flex items-center space-x-2">
+                            <span class="font-extrabold text-slate-800">${rep.subject || '의견/제보'}</span>
+                            <span class="text-[10px] text-slate-400 font-medium">(${rep.author || '주민'}, ${rep.date || ''})</span>
+                        </div>
+                        <p class="text-slate-600 font-medium leading-relaxed">${rep.content}</p>
+                    </div>
+                    ${isAdmin ? `
+                        <button onclick="deleteReport(${idx})" class="text-rose-500 hover:text-rose-700 font-bold text-xs p-1 shrink-0" title="의견 삭제">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    ` : ''}
+                </div>
+            `).join('');
+
+            if (modalContainer) modalContainer.innerHTML = html;
+            if (tabContainer) tabContainer.innerHTML = html;
+        }
+
+        function openReportModal() {
+            renderReports();
+            openModal('reportBoardModal');
+        }
+
+        async function submitReport() {
+            const author = document.getElementById('reportAuthor').value.trim() || '익명 주민';
+            const subject = document.getElementById('reportSubject').value.trim() || '일반 의견';
+            const content = document.getElementById('reportContent').value.trim();
+
+            if (!content) {
+                await showCustomAlert('내용을 입력해 주세요.');
+                return;
+            }
+
+            const today = new Date();
+            const dateStr = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}`;
+
+            const newReport = { author, subject, content, date: dateStr };
+            reportData.unshift(newReport);
+            localStorage.setItem('ssangyong_reports_v1', JSON.stringify(reportData));
+
+            document.getElementById('reportAuthor').value = '';
+            document.getElementById('reportSubject').value = '';
+            document.getElementById('reportContent').value = '';
+
+            renderReports();
+            await showCustomAlert('주민 의견이 성공적으로 등록되었습니다.');
+        }
+
+        async function deleteReport(index) {
+            const confirmed = await showCustomConfirm('이 의견/제보를 삭제하시겠습니까?', '의견 삭제');
+            if (confirmed) {
+                reportData.splice(index, 1);
+                localStorage.setItem('ssangyong_reports_v1', JSON.stringify(reportData));
+                renderReports();
+            }
+        }
+
+        function openAddAptModal() {
+            document.getElementById('editAptIndex').value = -1;
+            document.getElementById('aptDongInput').value = '1동';
+            document.getElementById('aptNameInput').value = '';
+            document.getElementById('aptDayInput').value = '';
+            document.getElementById('aptNoteInput').value = '';
+            openModal('aptModal');
+        }
+
+        function editAptItem(index) {
+            const item = aptData[index];
+            if (!item) return;
+            document.getElementById('editAptIndex').value = index;
+            document.getElementById('aptDongInput').value = item.dong;
+            document.getElementById('aptNameInput').value = item.name;
+            document.getElementById('aptDayInput').value = item.day;
+            document.getElementById('aptNoteInput').value = item.note;
+            openModal('aptModal');
+        }
+
+        function saveAptItem() {
+            const index = parseInt(document.getElementById('editAptIndex').value);
+            const dong = document.getElementById('aptDongInput').value;
+            const name = document.getElementById('aptNameInput').value.trim();
+            const day = document.getElementById('aptDayInput').value.trim();
+            const note = document.getElementById('aptNoteInput').value.trim();
+
+            if (!name || !day) {
+                showCustomAlert('아파트 이름과 수거 요일을 입력해 주세요.');
+                return;
+            }
+
+            const newApt = { dong, name, day, note: note || '배출시간 및 지정장소 준수' };
+            if (index >= 0) {
+                aptData[index] = newApt;
+            } else {
+                aptData.unshift(newApt);
+            }
+
+            localStorage.setItem('ssangyong_apt_data_v2', JSON.stringify(aptData));
+            closeModal('aptModal');
+            renderAptCards();
+        }
+
+        async function deleteAptItem(index) {
+            const confirmed = await showCustomConfirm('해당 아파트 수거 정보를 삭제하시겠습니까?', '삭제 확인');
+            if (confirmed) {
+                aptData.splice(index, 1);
+                localStorage.setItem('ssangyong_apt_data_v2', JSON.stringify(aptData));
+                renderAptCards();
+            }
+        }
+
+        function openAddGuideModal() {
+            document.getElementById('editItemIndex').value = -1;
+            document.getElementById('guideCatInput').value = 'paper';
+            document.getElementById('guideTitleInput').value = '';
+            document.getElementById('guideAllowedInput').value = '';
+            document.getElementById('guideDisallowedInput').value = '';
+            openModal('guideModal');
+        }
+
+        function editGuideItem(index) {
+            const item = guideData[index];
+            if (!item) return;
+            document.getElementById('editItemIndex').value = index;
+            document.getElementById('guideCatInput').value = item.category;
+            document.getElementById('guideTitleInput').value = item.title;
+            document.getElementById('guideAllowedInput').value = item.allowed;
+            document.getElementById('guideDisallowedInput').value = item.disallowed;
+            openModal('guideModal');
+        }
+
+        function saveWasteItem() {
+            const index = parseInt(document.getElementById('editItemIndex').value);
+            const category = document.getElementById('guideCatInput').value;
+            const title = document.getElementById('guideTitleInput').value.trim();
+            const allowed = document.getElementById('guideAllowedInput').value.trim();
+            const disallowed = document.getElementById('guideDisallowedInput').value.trim();
+
+            if (!title) {
+                showCustomAlert('품목명을 입력해 주세요.');
+                return;
+            }
+
+            const newGuide = { category, title, allowed, disallowed };
+            if (index >= 0) {
+                guideData[index] = newGuide;
+            } else {
+                guideData.unshift(newGuide);
+            }
+
+            localStorage.setItem('ssangyong_guide_data_v2', JSON.stringify(guideData));
+            closeModal('guideModal');
+            renderGuideCards();
+        }
+
+        async function deleteGuideItem(index) {
+            const confirmed = await showCustomConfirm('해당 가이드 항목을 삭제하시겠습니까?', '삭제 확인');
+            if (confirmed) {
+                guideData.splice(index, 1);
+                localStorage.setItem('ssangyong_guide_data_v2', JSON.stringify(guideData));
+                renderGuideCards();
+            }
+        }
+    </script>
+</body>
+</html>
